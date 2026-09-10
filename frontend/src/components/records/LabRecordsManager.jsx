@@ -1,0 +1,248 @@
+import React, { useState, useMemo } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+} from "recharts";
+import { Pencil, Trash2, FlaskConical, History, Filter } from "lucide-react";
+import { toast } from "sonner";
+import { tierForSigma, INSTRUMENTS } from "@/lib/sigma";
+import { updateRecord, deleteRecord } from "@/lib/api";
+
+const fmtDate = (iso) => {
+  try { return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); }
+  catch { return iso; }
+};
+
+export const LabRecordsManager = ({ records, onChanged }) => {
+  const [instrument, setInstrument] = useState("all");
+  const [analyte, setAnalyte] = useState("all");
+  const [editing, setEditing] = useState(null);
+
+  const instruments = useMemo(() => ["all", ...Array.from(new Set(records.map((r) => r.instrument)))], [records]);
+  const analytes = useMemo(() => ["all", ...Array.from(new Set(records.map((r) => r.analyte)))], [records]);
+
+  const filtered = useMemo(() => {
+    return records
+      .filter((r) => (instrument === "all" || r.instrument === instrument) && (analyte === "all" || r.analyte === analyte))
+      .slice()
+      .sort((a, b) => new Date(b.measured_at) - new Date(a.measured_at));
+  }, [records, instrument, analyte]);
+
+  const trend = useMemo(() => {
+    return filtered
+      .slice()
+      .sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at))
+      .map((r) => ({ date: fmtDate(r.measured_at), sigma: r.sigma, analyte: r.analyte }));
+  }, [filtered]);
+
+  const remove = async (id) => {
+    try { await deleteRecord(id); toast.success("Record deleted"); onChanged && onChanged(); }
+    catch { toast.error("Delete failed"); }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-sky-600" />
+          <h3 className="font-display font-semibold text-slate-900">Filter Records</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+          <div>
+            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Instrument</Label>
+            <Select value={instrument} onValueChange={setInstrument}>
+              <SelectTrigger className="mt-1.5" data-testid="records-instrument-filter"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {instruments.map((i) => <SelectItem key={i} value={i}>{i === "all" ? "All instruments" : i}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Analyte</Label>
+            <Select value={analyte} onValueChange={setAnalyte}>
+              <SelectTrigger className="mt-1.5" data-testid="records-analyte-filter"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">
+                {analytes.map((a) => <SelectItem key={a} value={a}>{a === "all" ? "All analytes" : a}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
+      {trend.length > 1 && (
+        <Card className="p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <History className="w-5 h-5 text-sky-600" />
+            <h3 className="font-display font-semibold text-lg text-slate-900">Sigma Trend Over Time</h3>
+          </div>
+          <div className="w-full h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trend} margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#64748b" }} stroke="#cbd5e1" />
+                <YAxis domain={[0, 8]} tick={{ fontSize: 11, fill: "#64748b" }} stroke="#cbd5e1" />
+                <Tooltip />
+                <ReferenceLine y={6} stroke="#059669" strokeDasharray="4 4" label={{ value: "6σ", fontSize: 10, fill: "#059669" }} />
+                <ReferenceLine y={3} stroke="#dc2626" strokeDasharray="4 4" label={{ value: "3σ", fontSize: 10, fill: "#dc2626" }} />
+                <Line type="monotone" dataKey="sigma" stroke="#0284c7" strokeWidth={2.5}
+                  dot={{ r: 4, fill: "#0284c7" }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      <Card className="p-0 overflow-hidden shadow-sm">
+        <div className="p-5 border-b border-slate-200 flex items-center gap-2">
+          <FlaskConical className="w-5 h-5 text-sky-600" />
+          <h3 className="font-display font-semibold text-lg text-slate-900">Lab Records</h3>
+          <Badge variant="secondary" className="ml-1 font-mono-num">{filtered.length}</Badge>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-[11px] uppercase tracking-wide text-slate-500 border-b border-slate-200">
+                <th className="px-5 py-3 font-semibold">Analyte</th>
+                <th className="px-3 py-3 font-semibold">Instrument</th>
+                <th className="px-3 py-3 font-semibold">Date</th>
+                <th className="px-3 py-3 font-semibold text-right">TEa</th>
+                <th className="px-3 py-3 font-semibold text-right">CV</th>
+                <th className="px-3 py-3 font-semibold text-right">Bias</th>
+                <th className="px-3 py-3 font-semibold text-right">Sigma</th>
+                <th className="px-5 py-3 font-semibold text-right"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => {
+                const tier = tierForSigma(r.sigma);
+                return (
+                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60" data-testid={`lab-record-item-${r.id}`}>
+                    <td className="px-5 py-3">
+                      <div className="font-medium text-slate-900">{r.analyte}</div>
+                      <div className="text-[11px] text-slate-400">{r.matrix} · {r.lot || "—"}</div>
+                    </td>
+                    <td className="px-3 py-3 text-slate-600">{r.instrument}</td>
+                    <td className="px-3 py-3 text-slate-600 font-mono-num">{fmtDate(r.measured_at)}</td>
+                    <td className="px-3 py-3 text-right font-mono-num text-slate-700">{r.tea}</td>
+                    <td className="px-3 py-3 text-right font-mono-num text-slate-700">{r.cv}</td>
+                    <td className="px-3 py-3 text-right font-mono-num text-slate-700">{r.bias}</td>
+                    <td className="px-3 py-3 text-right">
+                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-semibold ${tier.badge}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${tier.dot}`} />
+                        {r.sigma.toFixed(2)}σ
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditing(r)}
+                        data-testid={`lab-record-edit-${r.id}`}>
+                        <Pencil className="w-4 h-4 text-slate-500" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`lab-record-delete-${r.id}`}>
+                            <Trash2 className="w-4 h-4 text-rose-500" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete this record?</AlertDialogTitle>
+                            <AlertDialogDescription>{r.analyte} on {r.instrument} ({fmtDate(r.measured_at)}) will be permanently removed.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={() => remove(r.id)}
+                              data-testid={`lab-record-confirm-delete-${r.id}`}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-400">No records. Add one from the Calculator tab.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {editing && (
+        <EditDialog record={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); onChanged && onChanged(); }} />
+      )}
+    </div>
+  );
+};
+
+const EditDialog = ({ record, onClose, onSaved }) => {
+  const [form, setForm] = useState({
+    ...record, tea: String(record.tea), cv: String(record.cv), bias: String(record.bias),
+  });
+  const [saving, setSaving] = useState(false);
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e?.target ? e.target.value : e }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateRecord(record.id, {
+        analyte: form.analyte, category: form.category, matrix: form.matrix,
+        instrument: form.instrument, lot: form.lot, notes: form.notes,
+        tea: parseFloat(form.tea) || 0, cv: parseFloat(form.cv) || 0, bias: parseFloat(form.bias) || 0,
+        measured_at: record.measured_at,
+      });
+      toast.success("Record updated");
+      onSaved();
+    } catch { toast.error("Update failed"); } finally { setSaving(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent data-testid="record-edit-dialog">
+        <DialogHeader><DialogTitle className="font-display">Edit Record — {record.analyte}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs font-semibold text-slate-500 uppercase">Analyte</Label>
+            <Input className="mt-1" value={form.analyte} onChange={set("analyte")} data-testid="edit-analyte-input" />
+          </div>
+          <div>
+            <Label className="text-xs font-semibold text-slate-500 uppercase">Instrument</Label>
+            <Select value={form.instrument} onValueChange={set("instrument")}>
+              <SelectTrigger className="mt-1" data-testid="edit-instrument-input"><SelectValue /></SelectTrigger>
+              <SelectContent className="max-h-72">{INSTRUMENTS.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div><Label className="text-xs font-semibold text-slate-500 uppercase">TEa %</Label>
+              <Input className="mt-1 font-mono-num" type="number" step="0.01" value={form.tea} onChange={set("tea")} data-testid="edit-tea-input" /></div>
+            <div><Label className="text-xs font-semibold text-slate-500 uppercase">CV %</Label>
+              <Input className="mt-1 font-mono-num" type="number" step="0.01" value={form.cv} onChange={set("cv")} data-testid="edit-cv-input" /></div>
+            <div><Label className="text-xs font-semibold text-slate-500 uppercase">Bias %</Label>
+              <Input className="mt-1 font-mono-num" type="number" step="0.01" value={form.bias} onChange={set("bias")} data-testid="edit-bias-input" /></div>
+          </div>
+          <div><Label className="text-xs font-semibold text-slate-500 uppercase">Reagent Lot</Label>
+            <Input className="mt-1 font-mono-num" value={form.lot || ""} onChange={set("lot")} data-testid="edit-lot-input" /></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button className="bg-slate-900 hover:bg-slate-800" onClick={save} disabled={saving} data-testid="edit-save-button">
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

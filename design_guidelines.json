@@ -1,0 +1,199 @@
+{
+  "project_name": "SigmaLab QC - Clinical Laboratory Six Sigma & Biological Variation Suite",
+  "design_archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST + ARCHETYPE 2: THE PERFORMANCE PRO (Scientific Precision & Clinical Trust)",
+  "context_type": "DASHBOARDS & SCIENTIFIC APPS (Clinical Diagnostic Quality Engineering)",
+  "theme": "Light theme with crisp scientific contrast and dark slate accents (Laboratory clean-room aesthetics, precise borders, no murky gradients)",
+  "typography": {
+    "heading_font": "Space Grotesk, Manrope, sans-serif",
+    "body_font": "IBM Plex Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+    "code_mono_font": "JetBrains Mono, SFMono-Regular, Menlo, monospace",
+    "font_load_instruction": "Inject Google Fonts links in public/index.html or @import in index.css: 'IBM+Plex+Sans:wght@400;500;600;700' and 'Space+Grotesk:wght@500;600;700' and 'JetBrains+Mono:wght@400;500;600'",
+    "hierarchy": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 leading-tight",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900",
+      "h3": "text-xl sm:text-2xl font-semibold tracking-normal text-slate-800",
+      "h4": "text-base sm:text-lg font-medium text-slate-800",
+      "body": "text-sm sm:text-base text-slate-600 leading-relaxed",
+      "caption_overline": "text-xs font-mono uppercase tracking-[0.18em] text-slate-500 font-semibold"
+    }
+  },
+  "colors": {
+    "surface": {
+      "canvas_bg": "#f8fafc",
+      "card_bg": "#ffffff",
+      "card_subtle": "#f1f5f9",
+      "border": "#e2e8f0",
+      "border_strong": "#cbd5e1"
+    },
+    "brand_and_primary": {
+      "primary_navy": "#0f172a",
+      "primary_accent_blue": "#0284c7",
+      "primary_accent_hover": "#0369a1",
+      "science_cyan": "#0ea5e9"
+    },
+    "sigma_performance_scale": {
+      "world_class": {
+        "label": "World Class (Sigma ≥ 6.0)",
+        "badge_bg": "bg-emerald-50",
+        "badge_text": "text-emerald-700",
+        "badge_border": "border-emerald-200",
+        "hex": "#059669",
+        "description": "Rule: 1_3s (N=2, 1 run/day), minimal false rejection, defect rate < 3.4 DPM"
+      },
+      "excellent": {
+        "label": "Excellent (5.0 ≤ Sigma < 6.0)",
+        "badge_bg": "bg-blue-50",
+        "badge_text": "text-blue-700",
+        "badge_border": "border-blue-200",
+        "hex": "#2563eb",
+        "description": "Rule: 1_3s / 2_2s / R_4s (N=2, 1 run/day)"
+      },
+      "good": {
+        "label": "Good (4.0 ≤ Sigma < 5.0)",
+        "badge_bg": "bg-amber-50",
+        "badge_text": "text-amber-800",
+        "badge_border": "border-amber-200",
+        "hex": "#d97706",
+        "description": "Rule: 1_3s / 2_2s / R_4s / 4_1s (N=4 or 2x2)"
+      },
+      "marginal": {
+        "label": "Marginal (3.0 ≤ Sigma < 4.0)",
+        "badge_bg": "bg-orange-50",
+        "badge_text": "text-orange-800",
+        "badge_border": "border-orange-200",
+        "hex": "#ea580c",
+        "description": "Rule: Full Multirule + 8_x or 10_x (N=4 to N=6, multiple runs)"
+      },
+      "poor": {
+        "label": "Unacceptable / Poor (Sigma < 3.0)",
+        "badge_bg": "bg-rose-50",
+        "badge_text": "text-rose-700",
+        "badge_border": "border-rose-200",
+        "hex": "#dc2626",
+        "description": "Analytical method redesign, calibration overhaul, or reagent troubleshooting required."
+      }
+    }
+  },
+  "layout_and_navigation": {
+    "header": {
+      "type": "Sticky Glassmorphism with crisp clinical border",
+      "classes": "sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-8 py-3",
+      "elements": [
+        "Brand icon (Hexagon Sigma glyph in slate-900 with science cyan dot)",
+        "Title: SigmaLab QC (Sub: Clinical Six Sigma & Biological Variation Suite)",
+        "Active Lab Selector or Instrument Filter quick badge",
+        "Tabs/Pills navigation: 1. Calculator & Live Simulation, 2. Biological Variation Database (EFLM/Ricos), 3. Normalized Method Decision Chart (OPSpecs), 4. Lab Records & History, 5. Report Generator (PDF/Excel)",
+        "Quick Action: '+ New Test Record' CTA button"
+      ]
+    },
+    "grid_structure": "Mode A & Mode B hybrid. Main analytical cockpit uses high-density 12-column grid (`grid-cols-1 md:grid-cols-12 gap-6`)."
+  },
+  "core_screens_and_components": {
+    "1_calculator_and_simulator": {
+      "component_path": "src/components/calculator/SigmaCalculator.js",
+      "features": [
+        "Interactive inputs: Analyte selection with autofill from Westgard/EFLM database OR manual custom specification",
+        "Fields: Analyte Name, TEa% (Total Allowable Error), Measured CV% (Imprecision), Measured Inaccuracy / Bias%, Instrument / Platform (e.g., Roche Cobas, Abbott Alinity, Beckman DxC, Siemens Atellica)",
+        "Calculated metrics: Sigma = (TEa% - Bias%) / CV%, Quality Goal Index (QGI) = Bias% / (1.5 * CV%) to identify whether imprecision or systematic bias is the problem",
+        "Visual Sigma Gauge: Dynamic SVG semi-circular gauge / linear gradient scale (0 to 7) with pointer indicating calculated metric",
+        "Recommended Westgard Rules card: Automatic QC design recommendations (Rules sequence, Control Measurements N, Runs per day, Error detection probability Ped vs False rejection Pfr)",
+        "Quick 'Save to Lab Records' action triggering instant history log update"
+      ]
+    },
+    "2_biological_variation_database": {
+      "component_path": "src/components/database/BiologicalVariationTable.js",
+      "features": [
+        "Preloaded comprehensive database of 40+ key clinical analytes (Electrolytes, Renal, Liver, Cardiac, Lipids, Endocrinology, Hematology, etc.) based on EFLM & Westgard Desirable specifications",
+        "Columns: Analyte Name, Sample Matrix (Serum/Plasma/Urine/Whole Blood), Within-Subject CVI%, Between-Subject CVG%, Desirable Imprecision I% (≤0.50 CVI), Desirable Inaccuracy Bias% (≤0.25 (CVI²+CVG²)^0.5), Desirable TEa% (1.65*I + Bias or EFLM standard)",
+        "Search bar with live filtering by category, name, or matrix",
+        "One-click 'Use in Calculator' button on each analyte row",
+        "Detailed drawer/dialog explaining EFLM Milan hierarchy & BIVAC quality criteria"
+      ]
+    },
+    "3_method_decision_chart_and_opspecs": {
+      "component_path": "src/components/charts/MethodDecisionChart.js",
+      "features": [
+        "Recharts-based Normalized OPSpecs & Normalized Method Decision Chart (Normalized Inaccuracy % vs Normalized Imprecision %)",
+        "Diagonal benchmark contour lines for Six Sigma (6σ, 5σ, 4σ, 3σ, 2σ)",
+        "Scatter points for all lab records or current simulated analyte",
+        "Interactive hover tooltip with Analyte, Instrument, Sigma value, and Operating coordinates",
+        "Legend and visual performance zones (World Class, Excellent, Good, Marginal, Poor)"
+      ]
+    },
+    "4_lab_records_and_historical_tracking": {
+      "component_path": "src/components/records/LabRecordsManager.js",
+      "features": [
+        "Full CRUD: Add record, Edit CV%/Bias%, Delete, Filter by Instrument or Analyte",
+        "History timeline / Line chart showing Sigma metric evolution over monthly QC runs",
+        "Pre-seeded with realistic clinical lab data (e.g. Glucose on Cobas c502, Troponin I on Alinity i, Creatinine on DxC 700, HbA1c on Tosoh G8)",
+        "Bulk export options and filter by status (At Risk vs Target met)"
+      ]
+    },
+    "5_report_export": {
+      "component_path": "src/components/reports/ReportExporter.js",
+      "features": [
+        "Printable / Clean PDF-ready format (window.print() with @media print CSS styles and custom lab header)",
+        "Excel/CSV export using dynamic CSV blob download with all metrics, Westgard rules, dates, and instrument tags",
+        "Executive Quality Summary showing % of tests meeting 6-sigma world class vs tests needing action"
+      ]
+    }
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1582560475093-ba66accbc424?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwyfHxjbGluaWNhbCUyMGxhYm9yYXRvcnklMjBzY2llbnRpc3QlMjBhbmFseXplcnxlbnwwfHx8fDE3ODkwMzI2ODF8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Clinical laboratory scientist using micropipette with sample vials",
+      "category": "Hero banner visual in quality overview and report preview dialog"
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1582719471384-894fbb16e074?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxNzV8MHwxfHNlYXJjaHwzfHxjbGluaWNhbCUyMGxhYm9yYXRvcnklMjBzY2llbnRpc3QlMjBhbmFseXplcnxlbnwwfHx8fDE3ODkwMzI2ODF8MA&ixlib=rb-4.1.0&q=85",
+      "description": "Laboratory specialist reviewing diagnostic equipment and microscopy analytical instruments",
+      "category": "About clinical quality engineering and biological variation methodology modal"
+    }
+  ],
+  "visual_enhancers": {
+    "borders": "1px solid #e2e8f0 with subtle slate hover ring",
+    "shadows": "shadow-sm for clean cards, shadow-md on active simulation panel",
+    "data_density": "High scanability, monospaced tabular figures for all numeric percentages and sigma values",
+    "no_murky_gradients": "Solid crisp surfaces with clean color accents",
+    "paddings": "Strict adherence to p-6/p-8 containers with border collision prevention"
+  },
+  "data_testid_conventions": {
+    "nav_tabs": "data-testid=\"nav-tab-[tab-name]\"",
+    "calculator_inputs": {
+      "analyte_select": "data-testid=\"calculator-analyte-select\"",
+      "tea_input": "data-testid=\"calculator-tea-input\"",
+      "cv_input": "data-testid=\"calculator-cv-input\"",
+      "bias_input": "data-testid=\"calculator-bias-input\"",
+      "instrument_input": "data-testid=\"calculator-instrument-input\"",
+      "calculate_btn": "data-testid=\"calculator-submit-button\"",
+      "save_record_btn": "data-testid=\"calculator-save-record-button\""
+    },
+    "results_metrics": {
+      "sigma_value": "data-testid=\"result-sigma-value\"",
+      "sigma_badge": "data-testid=\"result-sigma-badge\"",
+      "qgi_value": "data-testid=\"result-qgi-value\"",
+      "westgard_rule": "data-testid=\"result-westgard-rule\""
+    },
+    "database_elements": {
+      "search_input": "data-testid=\"bv-database-search-input\"",
+      "category_filter": "data-testid=\"bv-database-category-filter\"",
+      "table_row": "data-testid=\"bv-database-row-[analyte-slug]\"",
+      "use_analyte_btn": "data-testid=\"bv-database-use-btn-[analyte-slug]\""
+    },
+    "records_elements": {
+      "record_item": "data-testid=\"lab-record-item-[id]\"",
+      "delete_record_btn": "data-testid=\"lab-record-delete-[id]\"",
+      "export_csv_btn": "data-testid=\"export-csv-button\"",
+      "export_pdf_btn": "data-testid=\"export-pdf-button\""
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build the complete React frontend in JavaScript (.js and .jsx files). Use existing dependencies: lucide-react, recharts, sonner, tailwindcss.",
+    "Implement comprehensive Biological Variation preloaded dataset (at least 30-40 clinical chemistry, immunochemistry, and hematology analytes with TEa%, CV%, Bias%).",
+    "Implement the Westgard QC Rule recommendation algorithm: Sigma ≥ 6 -> 1_3s (N=2); 5.0-5.9 -> 1_3s/2_2s/R_4s (N=2); 4.0-4.9 -> 1_3s/2_2s/R_4s/4_1s (N=4); 3.0-3.9 -> Multirule + 8_x (N=4 or 6); <3.0 -> Method Unacceptable (Requires redesign).",
+    "Include Method Decision Chart with Recharts: Normalizing Inaccuracy% on Y-axis (0-100% of TEa) and Imprecision% on X-axis (0-50% of TEa), drawing Six Sigma reference contour lines (y = 100 - sigma * x).",
+    "Persist lab records to localStorage so user changes survive reloads, and provide realistic initial seeded lab records for testing.",
+    "Support full CSV export and a dedicated formatted Print view for PDF reporting.",
+    "All testable buttons and inputs MUST include the specified data-testid attributes."
+  ]
+}
