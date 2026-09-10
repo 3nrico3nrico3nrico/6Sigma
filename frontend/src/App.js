@@ -9,6 +9,7 @@ import { MethodDecisionChart } from "@/components/charts/MethodDecisionChart";
 import { LabRecordsManager } from "@/components/records/LabRecordsManager";
 import { ReportExporter } from "@/components/reports/ReportExporter";
 import { getAnalytes, getRecords } from "@/lib/api";
+import { useFavourites } from "@/lib/favourites";
 
 const TABS = [
   { id: "calculator", label: "Calculator", icon: Calculator },
@@ -23,15 +24,20 @@ function App() {
   const [analytes, setAnalytes] = useState([]);
   const [records, setRecords] = useState([]);
   const [prefill, setPrefill] = useState(null);
+  const favourites = useFavourites();
+
+  const loadAnalytes = useCallback(() => {
+    getAnalytes().then(setAnalytes).catch(() => {});
+  }, []);
 
   const loadRecords = useCallback(() => {
     getRecords().then(setRecords).catch(() => {});
   }, []);
 
   useEffect(() => {
-    getAnalytes().then(setAnalytes).catch(() => {});
+    loadAnalytes();
     loadRecords();
-  }, [loadRecords]);
+  }, [loadAnalytes, loadRecords]);
 
   const useAnalyte = (a, tea) => {
     setPrefill({
@@ -52,14 +58,14 @@ function App() {
           <div data-testid="tab-panel-calculator">
             <PageTitle title="Six Sigma Calculator & QC Design"
               subtitle="Compute the sigma metric and get automatic Westgard rule recommendations." />
-            <SigmaCalculator analytes={analytes} prefill={prefill} onSaved={loadRecords} />
+            <SigmaCalculator analytes={analytes} prefill={prefill} onSaved={loadRecords} favourites={favourites} />
           </div>
         )}
         {activeTab === "database" && (
           <div data-testid="tab-panel-database">
             <PageTitle title="Desirable Biological Variation Database"
               subtitle="Ricos/EFLM specifications. Click Use to load an analyte's TEa into the calculator." />
-            <BiologicalVariationTable analytes={analytes} onUse={useAnalyte} />
+            <BiologicalVariationTable analytes={analytes} onUse={useAnalyte} favourites={favourites} onImported={loadAnalytes} />
           </div>
         )}
         {activeTab === "chart" && (

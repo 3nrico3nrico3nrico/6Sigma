@@ -1,8 +1,10 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import io
+import csv
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
@@ -12,7 +14,7 @@ import uuid
 import math
 from datetime import datetime, timezone
 
-from biological_variation import BIOLOGICAL_VARIATION_DB
+from biological_variation import BIOLOGICAL_VARIATION_DB, classify, build_specs
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -73,7 +75,118 @@ async def root():
 
 @api_router.get("/analytes")
 async def get_analytes():
-    return BIOLOGICAL_VARIATION_DB
+    custom = await db.custom_analytes.find({}, {"_id": 0}).to_list(5000)
+    return BIOLOGICAL_VARIATION_DB + custom
+
+
+def _to_float(v):
+    if v is None:
+        return None
+    s = str(v).strip().replace(",", ".")
+    if s in ("", "-", "---", "na", "n/a"):
+        return None
+    try:
+        return round(float(s), 2)
+    except ValueError:
+        return None
+
+
+def _parse_rows(filename: str, content: bytes):
+    """Return list of (matrix, name, tea, cvi, cvg) from an xlsx or csv file."""
+    rows = []
+    if filename.lower().endswith(".csv"):
+        text = content.decode("utf-8-sig", errors="ignore")
+        rows = [r for r in csv.reader(io.StringIO(text))]
+    else:
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+        ws = wb.active
+        rows = [list(r) for r in ws.iter_rows(values_only=True)]
+
+    if not rows:
+        return []
+
+    # Detect a header row and column positions
+    header = [str(c or "").strip().lower() for c in rows[0]]
+
+    def find(*keys):
+        for i, h in enumerate(header):
+            if any(k in h for k in keys):
+                return i
+        return None
+
+    ci_name = find("anal", "test", "measurand", "parameter")
+    ci_tea = find("tea", "te%", "allowable", "ea%")
+    ci_matrix = find("matr", "matrix", "sample", "specimen")
+    ci_cvi = find("cvi", "cv-i", "within")
+    ci_cvg = find("cvg", "cv-g", "between")
+    has_header = ci_name is not None or ci_tea is not None
+    data = rows[1:] if has_header else rows
+
+    if not has_header:
+        # Assume positional: [matrix, name, tea] (like the reference files) or [name, tea]
+        ncol = max((len(r) for r in rows), default=0)
+        if ncol >= 3:
+            ci_matrix, ci_name, ci_tea = 0, 1, 2
+        else:
+            ci_name, ci_tea = 0, 1
+
+    out = []
+    for r in data:
+        def cell(i):
+            return r[i] if (i is not None and i < len(r)) else None
+        name = str(cell(ci_name) or "").strip()
+        name = " ".join(name.split())
+        if not name:
+            continue
+        out.append((
+            str(cell(ci_matrix) or "Serum").strip() or "Serum",
+            name,
+            _to_float(cell(ci_tea)),
+            _to_float(cell(ci_cvi)),
+            _to_float(cell(ci_cvg)),
+        ))
+    return out
+
+
+@api_router.post("/analytes/import")
+async def import_analytes(file: UploadFile = File(...)):
+    content = await file.read()
+    try:
+        parsed = _parse_rows(file.filename or "upload.xlsx", content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not read file: {e}")
+
+    docs = []
+    for matrix, name, tea, cvi, cvg in parsed:
+        category = classify(name)
+        base = {
+            "slug": "custom-" + uuid.uuid4().hex[:10],
+            "name": name, "category": category, "matrix": matrix,
+            "custom": True,
+        }
+        if cvi and cvg:
+            specs, peer = build_specs(cvi, cvg)
+            des = specs["desirable"]
+            base.update({"cvi": cvi, "cvg": cvg, "specs": specs,
+                         "desirable_cv": des["cv"], "desirable_bias": des["bias"],
+                         "tea": des["tea"], "peer_sigma": peer, "detailed": True})
+        else:
+            base.update({"cvi": None, "cvg": None, "specs": None,
+                         "desirable_cv": None, "desirable_bias": None,
+                         "tea": tea, "peer_sigma": None, "detailed": False})
+        docs.append(base)
+
+    if docs:
+        await db.custom_analytes.insert_many(docs)
+    total = await db.custom_analytes.count_documents({})
+    return {"imported": len(docs), "total_custom": total}
+
+
+@api_router.delete("/analytes/custom")
+async def clear_custom_analytes():
+    res = await db.custom_analytes.delete_many({})
+    return {"deleted": res.deleted_count}
 
 
 def _record_from_create(payload: LabRecordCreate) -> LabRecord:

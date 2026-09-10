@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Save, Calculator as CalcIcon, Activity, Gauge as GaugeIcon, ShieldCheck, Users } from "lucide-react";
+import { Save, Calculator as CalcIcon, Activity, Gauge as GaugeIcon, ShieldCheck, Users, Star } from "lucide-react";
 import { toast } from "sonner";
 import { SigmaGauge } from "@/components/SigmaGauge";
 import {
@@ -21,9 +21,17 @@ const emptyForm = {
   tea: "", cv: "", bias: "", instrument: "Roche Cobas c502", lot: "", notes: "",
 };
 
-export const SigmaCalculator = ({ analytes, prefill, onSaved }) => {
+export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
+  const { isFav } = favourites;
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  const sortedAnalytes = useMemo(() => {
+    return analytes
+      .map((a, i) => [a, i])
+      .sort((x, y) => (Number(isFav(y[0].name)) - Number(isFav(x[0].name))) || (x[1] - y[1]))
+      .map((p) => p[0]);
+  }, [analytes, isFav]);
 
   useEffect(() => {
     if (prefill) setForm((f) => ({ ...f, ...prefill }));
@@ -35,7 +43,8 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved }) => {
     const a = analytes.find((x) => x.name === name);
     if (a) {
       setForm((f) => ({
-        ...f, analyte: a.name, category: a.category, matrix: a.matrix, tea: String(a.tea),
+        ...f, analyte: a.name, category: a.category, matrix: a.matrix,
+        tea: a.tea != null ? String(a.tea) : "",
       }));
     }
   };
@@ -94,9 +103,12 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved }) => {
                 <SelectValue placeholder="Select from Biological Variation DB…" />
               </SelectTrigger>
               <SelectContent className="max-h-72">
-                {analytes.map((a) => (
+                {sortedAnalytes.map((a) => (
                   <SelectItem key={a.slug} value={a.name}>
-                    {a.name} <span className="text-slate-400">· TEa {a.tea}%</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      {isFav(a.name) && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
+                      {a.name} <span className="text-slate-400">· TEa {a.tea != null ? a.tea : "—"}%</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

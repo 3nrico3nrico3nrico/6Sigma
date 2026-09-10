@@ -51,6 +51,8 @@ def test_peer_sigma_range(s):
     r = s.get(f"{API}/analytes", timeout=30)
     data = r.json()
     for a in data:
+        if a.get("peer_sigma") is None:
+            continue  # non-detailed imported analytes have no peer_sigma
         assert isinstance(a["peer_sigma"], (int, float))
         assert 1.5 <= a["peer_sigma"] <= 7.0, f"{a['name']} peer_sigma out of range: {a['peer_sigma']}"
 
