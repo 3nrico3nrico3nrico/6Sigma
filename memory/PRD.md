@@ -31,6 +31,19 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 3)
+- Imported the full official Westgard/EFLM **TEa database (351 analytes)** from user-uploaded Excel files.
+- Database now has **378 analytes**: 49 detailed (full CVI/CVG → optimal/desirable/minimum specs + peer benchmark) + 329 extended (official allowable TEa%, across Serum/Plasma/Urine/Whole Blood/Erythrocytes/etc.).
+- Extended analytes are searchable, filterable by matrix category, and usable in the calculator (with manual CV/Bias entry); TEa-less entries have the Use button disabled.
+- Data generated into `/app/backend/tea_extended.py` (no runtime dependency) and merged in `biological_variation.py`.
+
+## Implemented (2026-06 — iteration 2)
+- Spec Levels (optimal/desirable/minimum) toggle in the DB browser + level-aware TEa autofill.
+- Lab-wide combined Sigma trend chart (one line per analyte).
+- Peer-group benchmark comparison card in the calculator.
+- Branded report (logo upload, lab name/address/accreditation, director signature) persisted in localStorage.
+- Verified by testing agent (iteration_2: backend 100%, frontend 100%).
+
 ## Implemented (2026-06 — iteration 1)
 - Six Sigma Calculator with live gauge, QGI, tier badge, Westgard rule engine.
 - Biological Variation Database (49 analytes) browser with search + category filter + "Use in Calculator".

@@ -10,6 +10,8 @@ and between-subject (CVG) biological variation:
 
 import math
 
+from tea_extended import EXTENDED_TEA
+
 # (name, category, matrix, CVI%, CVG%)
 _RAW = [
     # Electrolytes
@@ -124,6 +126,23 @@ def build_database():
             "desirable_bias": des["bias"],
             "tea": des["tea"],
             "peer_sigma": peer_sigma,
+            "detailed": True,
+        })
+    # Extended TEa-only analytes from the official Westgard/EFLM TEa database.
+    for slug, name, matrix, tea in EXTENDED_TEA:
+        db.append({
+            "slug": slug,
+            "name": name,
+            "category": matrix,
+            "matrix": matrix,
+            "cvi": None,
+            "cvg": None,
+            "specs": None,
+            "desirable_cv": None,
+            "desirable_bias": None,
+            "tea": tea,
+            "peer_sigma": None,
+            "detailed": False,
         })
     return db
 

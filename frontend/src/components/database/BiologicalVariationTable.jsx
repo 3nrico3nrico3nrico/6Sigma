@@ -17,6 +17,8 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
   const [cat, setCat] = useState("all");
   const [level, setLevel] = useState("desirable");
 
+  const detailedCount = useMemo(() => analytes.filter((a) => a.detailed).length, [analytes]);
+
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(analytes.map((a) => a.category)))],
     [analytes]
@@ -40,7 +42,7 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
           <InfoDialog />
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Ricos/EFLM specifications · {analytes.length} analytes at <strong className="text-slate-700 capitalize">{level}</strong> stringency. I = k·CVI, Bias = (k/2)·√(CVI²+CVG²), TEa = 1.65·I + Bias.
+          {analytes.length} analytes · {detailedCount} with full biological-variation specs (level toggle applies) and {analytes.length - detailedCount} with official Westgard/EFLM allowable total error (TEa). Selected goal: <strong className="text-slate-700 capitalize">{level}</strong>.
         </p>
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide mr-1">Performance goal:</span>
@@ -93,7 +95,9 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((a) => (
+            {filtered.map((a) => {
+              const teaVal = a.detailed ? a.specs[level].tea : a.tea;
+              return (
               <tr key={a.slug} className="border-b border-slate-100 hover:bg-sky-50/40 transition-colors"
                 data-testid={`bv-database-row-${a.slug}`}>
                 <td className="px-5 py-3">
@@ -103,25 +107,28 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
                 <td className="px-3 py-3 text-slate-600">
                   <Badge variant="secondary" className="font-normal text-[11px]">{a.matrix}</Badge>
                 </td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvi}</td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvg}</td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.specs[level].cv}</td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.specs[level].bias}</td>
-                <td className="px-3 py-3 text-right font-mono-num font-semibold text-slate-900">{a.specs[level].tea}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvi ?? "—"}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvg ?? "—"}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.detailed ? a.specs[level].cv : "—"}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.detailed ? a.specs[level].bias : "—"}</td>
+                <td className="px-3 py-3 text-right font-mono-num font-semibold text-slate-900">{teaVal != null ? teaVal : "—"}</td>
                 <td className="px-3 py-3 text-right">
-                  <span className="inline-flex items-center gap-1 font-mono-num text-xs font-semibold" style={{ color: tierForSigma(a.peer_sigma).hex }}>
-                    <Users className="w-3 h-3" />{a.peer_sigma.toFixed(1)}
-                  </span>
+                  {a.peer_sigma != null ? (
+                    <span className="inline-flex items-center gap-1 font-mono-num text-xs font-semibold" style={{ color: tierForSigma(a.peer_sigma).hex }}>
+                      <Users className="w-3 h-3" />{a.peer_sigma.toFixed(1)}
+                    </span>
+                  ) : <span className="text-slate-300">—</span>}
                 </td>
                 <td className="px-5 py-3 text-right">
-                  <Button size="sm" variant="outline" className="h-8"
-                    onClick={() => onUse(a, a.specs[level].tea)}
+                  <Button size="sm" variant="outline" className="h-8" disabled={teaVal == null}
+                    onClick={() => onUse(a, teaVal)}
                     data-testid={`bv-database-use-btn-${a.slug}`}>
                     Use <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {filtered.length === 0 && (
               <tr><td colSpan={9} className="px-5 py-10 text-center text-slate-400">No analytes match your filters.</td></tr>
             )}
