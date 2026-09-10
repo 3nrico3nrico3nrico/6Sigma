@@ -88,12 +88,29 @@ def _slug(name: str) -> str:
     return s.strip("-")
 
 
+# Stringency factor k for imprecision at each EFLM performance level.
+# I = k * CVI ; Bias = (k/2) * sqrt(CVI^2 + CVG^2) ; TEa = 1.65*I + Bias
+_LEVEL_K = {"optimal": 0.25, "desirable": 0.50, "minimum": 0.75}
+
+
+def _level_spec(cvi, cvg, k):
+    imprecision = round(k * cvi, 2)
+    bias = round((k / 2) * math.sqrt(cvi ** 2 + cvg ** 2), 2)
+    tea = round(1.65 * imprecision + bias, 2)
+    return {"cv": imprecision, "bias": bias, "tea": tea}
+
+
 def build_database():
     db = []
     for name, category, matrix, cvi, cvg in _RAW:
-        imprecision = round(0.5 * cvi, 2)
-        bias = round(0.25 * math.sqrt(cvi ** 2 + cvg ** 2), 2)
-        tea = round(1.65 * imprecision + bias, 2)
+        specs = {lvl: _level_spec(cvi, cvg, k) for lvl, k in _LEVEL_K.items()}
+        des = specs["desirable"]
+        # Illustrative typical peer-group achieved performance:
+        # labs commonly reach ~55% of desirable imprecision and ~50% of desirable bias.
+        typical_cv = round(des["cv"] * 0.55, 2) or 0.01
+        typical_bias = round(des["bias"] * 0.5, 2)
+        peer_sigma = round((des["tea"] - typical_bias) / typical_cv, 1)
+        peer_sigma = max(1.5, min(7.0, peer_sigma))
         db.append({
             "slug": _slug(name),
             "name": name,
@@ -101,9 +118,12 @@ def build_database():
             "matrix": matrix,
             "cvi": cvi,
             "cvg": cvg,
-            "desirable_cv": imprecision,
-            "desirable_bias": bias,
-            "tea": tea,
+            "specs": specs,
+            # backward-compatible desirable-level flat fields
+            "desirable_cv": des["cv"],
+            "desirable_bias": des["bias"],
+            "tea": des["tea"],
+            "peer_sigma": peer_sigma,
         })
     return db
 

@@ -33,9 +33,10 @@ function App() {
     loadRecords();
   }, [loadRecords]);
 
-  const useAnalyte = (a) => {
+  const useAnalyte = (a, tea) => {
     setPrefill({
-      analyte: a.name, category: a.category, matrix: a.matrix, tea: String(a.tea),
+      analyte: a.name, category: a.category, matrix: a.matrix,
+      tea: String(tea != null ? tea : a.tea),
       _ts: Date.now(),
     });
     setActiveTab("calculator");

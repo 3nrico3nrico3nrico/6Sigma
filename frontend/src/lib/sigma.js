@@ -104,3 +104,16 @@ export const INSTRUMENTS = [
   "Beckman DxC 700", "Beckman DxI 800", "Siemens Atellica CH", "Siemens Atellica IM",
   "Tosoh G8", "Sysmex XN-1000", "Ortho Vitros XT", "Other",
 ];
+
+export const SPEC_LEVELS = [
+  { key: "optimal", label: "Optimal", hint: "Strictest goal (I = 0.25·CVI)" },
+  { key: "desirable", label: "Desirable", hint: "Standard goal (I = 0.50·CVI)" },
+  { key: "minimum", label: "Minimum", hint: "Floor goal (I = 0.75·CVI)" },
+];
+
+// Distinct palette for multi-series (lab-wide) trend lines.
+export const TREND_PALETTE = [
+  "#0284c7", "#059669", "#d97706", "#dc2626", "#7c3aed",
+  "#db2777", "#0891b2", "#65a30d", "#ea580c", "#4f46e5",
+  "#0d9488", "#c026d3", "#ca8a04", "#e11d48", "#2563eb",
+];

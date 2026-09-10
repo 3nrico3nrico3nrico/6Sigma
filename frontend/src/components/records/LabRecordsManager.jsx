@@ -15,11 +15,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from "recharts";
-import { Pencil, Trash2, FlaskConical, History, Filter } from "lucide-react";
+import { Pencil, Trash2, FlaskConical, History, Filter, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { tierForSigma, INSTRUMENTS } from "@/lib/sigma";
+import { tierForSigma, INSTRUMENTS, TREND_PALETTE } from "@/lib/sigma";
 import { updateRecord, deleteRecord } from "@/lib/api";
 
 const fmtDate = (iso) => {
@@ -48,6 +48,26 @@ export const LabRecordsManager = ({ records, onChanged }) => {
       .sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at))
       .map((r) => ({ date: fmtDate(r.measured_at), sigma: r.sigma, analyte: r.analyte }));
   }, [filtered]);
+
+  // Lab-wide combined trend: one line per analyte, pivoted by month, across ALL records.
+  const combined = useMemo(() => {
+    const monthKey = (iso) => {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+    };
+    const names = Array.from(new Set(records.map((r) => r.analyte)));
+    const map = {};
+    records
+      .slice()
+      .sort((a, b) => new Date(a.measured_at) - new Date(b.measured_at))
+      .forEach((r) => {
+        const key = monthKey(r.measured_at);
+        if (!map[key]) map[key] = { month: key, _sort: new Date(r.measured_at).getTime() };
+        map[key][r.analyte] = r.sigma;
+      });
+    const rows = Object.values(map).sort((a, b) => a._sort - b._sort);
+    return { rows, names };
+  }, [records]);
 
   const remove = async (id) => {
     try { await deleteRecord(id); toast.success("Record deleted"); onChanged && onChanged(); }
@@ -82,6 +102,34 @@ export const LabRecordsManager = ({ records, onChanged }) => {
           </div>
         </div>
       </Card>
+
+      {combined.rows.length > 1 && combined.names.length > 0 && (
+        <Card className="p-6 shadow-sm" data-testid="combined-trend-card">
+          <div className="flex items-center gap-2 mb-1">
+            <Layers className="w-5 h-5 text-sky-600" />
+            <h3 className="font-display font-semibold text-lg text-slate-900">Lab-wide Sigma Trend</h3>
+          </div>
+          <p className="text-sm text-slate-500 mb-4">Every analyte's sigma over time on one chart — spot lab-wide drift at a glance.</p>
+          <div className="w-full h-[360px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={combined.rows} margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#64748b" }} stroke="#cbd5e1" />
+                <YAxis domain={[0, 8]} tick={{ fontSize: 11, fill: "#64748b" }} stroke="#cbd5e1" />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <ReferenceLine y={3} stroke="#dc2626" strokeDasharray="4 4" />
+                <ReferenceLine y={6} stroke="#059669" strokeDasharray="4 4" />
+                {combined.names.map((name, i) => (
+                  <Line key={name} type="monotone" dataKey={name}
+                    stroke={TREND_PALETTE[i % TREND_PALETTE.length]} strokeWidth={2}
+                    dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
 
       {trend.length > 1 && (
         <Card className="p-6 shadow-sm">

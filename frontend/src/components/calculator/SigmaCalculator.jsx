@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Save, Calculator as CalcIcon, Activity, Gauge as GaugeIcon, ShieldCheck } from "lucide-react";
+import { Save, Calculator as CalcIcon, Activity, Gauge as GaugeIcon, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { SigmaGauge } from "@/components/SigmaGauge";
 import {
@@ -50,6 +50,13 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved }) => {
   const tier = tierForSigma(sigma);
   const rec = westgardRecommendation(sigma);
   const qgiNote = qgiInterpretation(sigma, qgi);
+
+  const dbAnalyte = useMemo(
+    () => analytes.find((a) => a.name.toLowerCase() === form.analyte.trim().toLowerCase()),
+    [analytes, form.analyte]
+  );
+  const peer = dbAnalyte ? dbAnalyte.peer_sigma : null;
+  const peerDelta = peer != null && hasInput ? sigma - peer : null;
 
   const save = async () => {
     if (!form.analyte.trim()) return toast.error("Enter an analyte name");
@@ -197,6 +204,48 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved }) => {
             <Qc label="P(error det.)" value={hasInput ? rec.ped : "—"} />
             <Qc label="P(false rej.)" value={hasInput ? rec.pfr : "—"} />
           </div>
+        </Card>
+
+        <Card className="p-6 shadow-sm" data-testid="peer-benchmark-card">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-5 h-5 text-sky-600" />
+            <h3 className="font-display font-semibold text-lg text-slate-900">Peer-Group Benchmark</h3>
+          </div>
+          {peer == null ? (
+            <p className="text-sm text-slate-500">
+              Select a database analyte to compare against the typical peer-group sigma for that measurand.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 items-center">
+              <div className="rounded-lg border border-slate-200 p-3 text-center">
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Your Sigma</div>
+                <div className="font-mono-num text-2xl font-bold" style={{ color: tier.hex }} data-testid="peer-your-sigma">
+                  {hasInput ? sigma.toFixed(2) : "—"}
+                </div>
+              </div>
+              <div className="rounded-lg border border-slate-200 p-3 text-center">
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Peer Median</div>
+                <div className="font-mono-num text-2xl font-bold text-slate-700" data-testid="peer-median-sigma">
+                  {peer.toFixed(1)}
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 text-center"
+                style={{ borderColor: peerDelta >= 0 ? "#a7f3d0" : "#fecaca", background: peerDelta >= 0 ? "#ecfdf5" : "#fef2f2" }}>
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">vs Peers</div>
+                <div className={`font-mono-num text-2xl font-bold ${peerDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`} data-testid="peer-delta">
+                  {peerDelta == null ? "—" : `${peerDelta >= 0 ? "+" : ""}${peerDelta.toFixed(2)}σ`}
+                </div>
+              </div>
+            </div>
+          )}
+          {peer != null && hasInput && (
+            <p className={`text-xs font-medium mt-3 ${peerDelta >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+              {peerDelta >= 0
+                ? `Outperforming the typical peer group for ${dbAnalyte.name} by ${peerDelta.toFixed(2)} sigma.`
+                : `Below the typical peer group for ${dbAnalyte.name} by ${Math.abs(peerDelta).toFixed(2)} sigma — review method.`}
+            </p>
+          )}
+          <p className="text-[11px] text-slate-400 mt-2">Peer benchmark is an illustrative typical-performance estimate, not live survey data.</p>
         </Card>
       </div>
     </div>

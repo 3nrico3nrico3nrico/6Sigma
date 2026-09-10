@@ -9,11 +9,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, ArrowRight, Info, Database } from "lucide-react";
+import { Search, ArrowRight, Info, Database, Users } from "lucide-react";
+import { SPEC_LEVELS, tierForSigma } from "@/lib/sigma";
 
 export const BiologicalVariationTable = ({ analytes, onUse }) => {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
+  const [level, setLevel] = useState("desirable");
 
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(analytes.map((a) => a.category)))],
@@ -38,8 +40,24 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
           <InfoDialog />
         </div>
         <p className="text-sm text-slate-500 mb-4">
-          Ricos/EFLM desirable specifications · {analytes.length} analytes. I = 0.5·CVI, Bias = 0.25·√(CVI²+CVG²), TEa = 1.65·I + Bias.
+          Ricos/EFLM specifications · {analytes.length} analytes at <strong className="text-slate-700 capitalize">{level}</strong> stringency. I = k·CVI, Bias = (k/2)·√(CVI²+CVG²), TEa = 1.65·I + Bias.
         </p>
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide mr-1">Performance goal:</span>
+          {SPEC_LEVELS.map((l) => (
+            <button
+              key={l.key}
+              onClick={() => setLevel(l.key)}
+              title={l.hint}
+              data-testid={`bv-level-${l.key}`}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                level === l.key ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+              }`}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -67,9 +85,10 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
               <th className="px-3 py-3 font-semibold">Matrix</th>
               <th className="px-3 py-3 font-semibold text-right">CVI %</th>
               <th className="px-3 py-3 font-semibold text-right">CVG %</th>
-              <th className="px-3 py-3 font-semibold text-right">Des. CV %</th>
-              <th className="px-3 py-3 font-semibold text-right">Des. Bias %</th>
+              <th className="px-3 py-3 font-semibold text-right">CV %</th>
+              <th className="px-3 py-3 font-semibold text-right">Bias %</th>
               <th className="px-3 py-3 font-semibold text-right">TEa %</th>
+              <th className="px-3 py-3 font-semibold text-right">Peer σ</th>
               <th className="px-5 py-3 font-semibold text-right"></th>
             </tr>
           </thead>
@@ -86,12 +105,17 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
                 </td>
                 <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvi}</td>
                 <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.cvg}</td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.desirable_cv}</td>
-                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.desirable_bias}</td>
-                <td className="px-3 py-3 text-right font-mono-num font-semibold text-slate-900">{a.tea}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.specs[level].cv}</td>
+                <td className="px-3 py-3 text-right font-mono-num text-slate-700">{a.specs[level].bias}</td>
+                <td className="px-3 py-3 text-right font-mono-num font-semibold text-slate-900">{a.specs[level].tea}</td>
+                <td className="px-3 py-3 text-right">
+                  <span className="inline-flex items-center gap-1 font-mono-num text-xs font-semibold" style={{ color: tierForSigma(a.peer_sigma).hex }}>
+                    <Users className="w-3 h-3" />{a.peer_sigma.toFixed(1)}
+                  </span>
+                </td>
                 <td className="px-5 py-3 text-right">
                   <Button size="sm" variant="outline" className="h-8"
-                    onClick={() => onUse(a)}
+                    onClick={() => onUse(a, a.specs[level].tea)}
                     data-testid={`bv-database-use-btn-${a.slug}`}>
                     Use <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Button>
@@ -99,7 +123,7 @@ export const BiologicalVariationTable = ({ analytes, onUse }) => {
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={8} className="px-5 py-10 text-center text-slate-400">No analytes match your filters.</td></tr>
+              <tr><td colSpan={9} className="px-5 py-10 text-center text-slate-400">No analytes match your filters.</td></tr>
             )}
           </tbody>
         </table>

@@ -22,8 +22,37 @@ def test_analytes_list(s):
     assert isinstance(data, list)
     assert len(data) >= 40, f"Expected ~49 analytes, got {len(data)}"
     a = data[0]
-    for k in ("name", "category", "matrix", "cvi", "cvg", "desirable_cv", "desirable_bias", "tea"):
+    for k in ("name", "category", "matrix", "cvi", "cvg", "desirable_cv", "desirable_bias", "tea", "specs", "peer_sigma"):
         assert k in a, f"missing key {k}"
+
+
+# --- New: specs and peer_sigma ---
+def test_analyte_specs_structure_and_tibc_math(s):
+    r = s.get(f"{API}/analytes", timeout=30)
+    data = r.json()
+    tibc = next(x for x in data if x["name"] == "TIBC")
+    for lvl in ("optimal", "desirable", "minimum"):
+        assert lvl in tibc["specs"], f"missing spec level {lvl}"
+        for f in ("cv", "bias", "tea"):
+            assert f in tibc["specs"][lvl]
+    # CVI = 6.4 for TIBC
+    assert tibc["specs"]["optimal"]["cv"] == 1.6
+    assert tibc["specs"]["desirable"]["cv"] == 3.2
+    assert tibc["specs"]["minimum"]["cv"] == 4.8
+    # optimal TEa smaller than minimum TEa
+    assert tibc["specs"]["optimal"]["tea"] < tibc["specs"]["minimum"]["tea"]
+    # backward compat: flat desirable fields match specs.desirable
+    assert tibc["desirable_cv"] == tibc["specs"]["desirable"]["cv"]
+    assert tibc["desirable_bias"] == tibc["specs"]["desirable"]["bias"]
+    assert tibc["tea"] == tibc["specs"]["desirable"]["tea"]
+
+
+def test_peer_sigma_range(s):
+    r = s.get(f"{API}/analytes", timeout=30)
+    data = r.json()
+    for a in data:
+        assert isinstance(a["peer_sigma"], (int, float))
+        assert 1.5 <= a["peer_sigma"] <= 7.0, f"{a['name']} peer_sigma out of range: {a['peer_sigma']}"
 
 
 # --- Records list (seed) ---
