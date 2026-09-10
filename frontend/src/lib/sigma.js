@@ -16,7 +16,9 @@ export function computeQGI(cv, bias) {
 
 // QGI interpretation: <0.8 imprecision problem, 0.8-1.2 both, >1.2 bias problem
 export function qgiInterpretation(sigma, qgi) {
-  if (sigma >= 4) return { label: "Acceptable performance", tone: "ok" };
+  if (sigma >= 6) return { label: "World-class performance", tone: "ok" };
+  if (sigma >= 5) return { label: "Excellent performance", tone: "ok" };
+  if (sigma >= 4) return { label: "Good performance", tone: "ok" };
   if (qgi < 0.8) return { label: "Imprecision problem — improve CV", tone: "warn" };
   if (qgi > 1.2) return { label: "Inaccuracy problem — reduce bias", tone: "warn" };
   return { label: "Both imprecision & bias contribute", tone: "warn" };

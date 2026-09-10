@@ -39,8 +39,8 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e?.target ? e.target.value : e }));
 
-  const onSelectAnalyte = (name) => {
-    const a = analytes.find((x) => x.name === name);
+  const onSelectAnalyte = (slug) => {
+    const a = analytes.find((x) => x.slug === slug);
     if (a) {
       setForm((f) => ({
         ...f, analyte: a.name, category: a.category, matrix: a.matrix,
@@ -48,6 +48,13 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
       }));
     }
   };
+
+  const selectedSlug = useMemo(() => {
+    const byName = analytes.filter((a) => a.name === form.analyte);
+    if (!byName.length) return undefined;
+    const exact = byName.find((a) => a.matrix === form.matrix);
+    return (exact || byName[0]).slug;
+  }, [analytes, form.analyte, form.matrix]);
 
   const tea = parseFloat(form.tea) || 0;
   const cv = parseFloat(form.cv) || 0;
@@ -98,16 +105,17 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
         <div className="space-y-4">
           <div>
             <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Analyte (autofill TEa from database)</Label>
-            <Select value={analytes.some((a) => a.name === form.analyte) ? form.analyte : undefined} onValueChange={onSelectAnalyte}>
+            <Select value={selectedSlug} onValueChange={onSelectAnalyte}>
               <SelectTrigger className="mt-1.5" data-testid="calculator-analyte-select">
                 <SelectValue placeholder="Select from Biological Variation DB…" />
               </SelectTrigger>
               <SelectContent className="max-h-72">
                 {sortedAnalytes.map((a) => (
-                  <SelectItem key={a.slug} value={a.name}>
+                  <SelectItem key={a.slug} value={a.slug}>
                     <span className="inline-flex items-center gap-1.5">
                       {isFav(a.name) && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
-                      {a.name} <span className="text-slate-400">· TEa {a.tea != null ? a.tea : "—"}%</span>
+                      {a.name}
+                      <span className="text-slate-400">· {a.matrix} · TEa {a.tea != null ? a.tea : "—"}%</span>
                     </span>
                   </SelectItem>
                 ))}

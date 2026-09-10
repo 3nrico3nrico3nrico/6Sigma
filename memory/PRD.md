@@ -31,6 +31,11 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 4)
+- Clinical panel categories (20), CVI/CVG enrichment, bulk Excel/CSV import (`POST /api/analytes/import`, `DELETE /api/analytes/custom`), favourites (localStorage `sigmalab_favourites`) — verified by testing agent (iteration_3: 100%/100%).
+- Fix: calculator analyte Select used `name` as value → duplicate names (e.g. Potassium serum/urine) rendered twice in trigger. Now keyed by `slug`, label shows matrix.
+- QGI note now sigma-tier aware: World-class / Excellent / Good performance (≥6 / ≥5 / ≥4σ).
+
 ## Implemented (2026-06 — iteration 3)
 - Imported the full official Westgard/EFLM **TEa database (351 analytes)** from user-uploaded Excel files.
 - Database now has **378 analytes**: 49 detailed (full CVI/CVG → optimal/desirable/minimum specs + peer benchmark) + 329 extended (official allowable TEa%, across Serum/Plasma/Urine/Whole Blood/Erythrocytes/etc.).
