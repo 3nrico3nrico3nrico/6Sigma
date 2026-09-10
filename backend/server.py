@@ -229,7 +229,27 @@ async def delete_record(record_id: str):
     res = await db.lab_records.delete_one({"id": record_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Record not found")
+    if await db.lab_records.count_documents({}) == 0:
+        await _mark_demo_dismissed()
     return {"success": True}
+
+
+@api_router.delete("/records")
+async def delete_records(instrument: Optional[str] = None, analyte: Optional[str] = None):
+    """Bulk delete: all records, or only those matching the given filters."""
+    query = {}
+    if instrument:
+        query["instrument"] = instrument
+    if analyte:
+        query["analyte"] = analyte
+    res = await db.lab_records.delete_many(query)
+    await _mark_demo_dismissed()
+    remaining = await db.lab_records.count_documents({})
+    return {"deleted": res.deleted_count, "remaining": remaining}
+
+
+async def _mark_demo_dismissed():
+    await db.settings.update_one({"key": "demo_dismissed"}, {"$set": {"value": True}}, upsert=True)
 
 
 SEED_RECORDS = [
@@ -247,9 +267,11 @@ SEED_RECORDS = [
 ]
 
 
-async def seed_records_if_empty():
+async def seed_records_if_empty(force: bool = False):
     count = await db.lab_records.count_documents({})
     if count > 0:
+        return
+    if not force and await db.settings.find_one({"key": "demo_dismissed", "value": True}):
         return
     from datetime import timedelta
     base = datetime.now(timezone.utc)
@@ -284,7 +306,9 @@ async def seed_records_if_empty():
 
 @api_router.post("/seed")
 async def seed_endpoint():
-    await seed_records_if_empty()
+    """Reload the demo dataset (only when the records collection is empty)."""
+    await db.settings.delete_one({"key": "demo_dismissed"})
+    await seed_records_if_empty(force=True)
     count = await db.lab_records.count_documents({})
     return {"records": count}
 

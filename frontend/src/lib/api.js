@@ -9,6 +9,8 @@ export const getRecords = () => api.get("/records").then((r) => r.data);
 export const createRecord = (data) => api.post("/records", data).then((r) => r.data);
 export const updateRecord = (id, data) => api.put(`/records/${id}`, data).then((r) => r.data);
 export const deleteRecord = (id) => api.delete(`/records/${id}`).then((r) => r.data);
+export const deleteRecords = (params = {}) => api.delete("/records", { params }).then((r) => r.data);
+export const reloadDemoRecords = () => api.post("/seed").then((r) => r.data);
 
 export const importAnalytes = (file) => {
   const form = new FormData();

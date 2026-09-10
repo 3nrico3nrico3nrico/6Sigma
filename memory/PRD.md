@@ -31,6 +31,12 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 8)
+- Bulk record clearing: `DELETE /api/records[?instrument=&analyte=]` (all or filtered). Lab Records header gets **Clear all / Clear filtered** button → confirmation dialog with record count, scope, and **Export CSV first** backup.
+- Demo data no longer re-seeds after the user empties the DB (`settings.demo_dismissed` flag, set on bulk delete or when the last record is deleted). **Load demo data** button appears only when the list is empty (`POST /api/seed`).
+- CSV export logic centralised in `lib/csv.js` (used by Reports and the backup button).
+- Verified by testing agent (iteration_7: backend 34/34, frontend 100%).
+
 ## Implemented (2026-06 — iteration 7, code-quality refactor)
 - Backend: `_parse_rows` split into `_read_rows` / `_detect_columns` / `_row_to_entry`; `tests/conftest.py` adds a cross-worker file lock so parallel pytest modules touching `custom_analytes` no longer race (25/25 stable).
 - Frontend componentisation (no behaviour change, all data-testids preserved):

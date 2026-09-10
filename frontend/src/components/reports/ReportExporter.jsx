@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { tierForSigma, TIERS, westgardRecommendation } from "@/lib/sigma";
 import { multiInstrumentAnalytes } from "@/lib/compare";
 import { Leaderboard } from "@/components/compare/Leaderboard";
+import { downloadCsv } from "@/lib/csv";
 
 const PROFILE_KEY = "sigmalab_lab_profile";
 const defaultProfile = { name: "", address: "", director: "", accreditation: "", logo: "" };
@@ -20,11 +21,6 @@ function loadProfile() {
   try { return { ...defaultProfile, ...JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") }; }
   catch { return { ...defaultProfile }; }
 }
-
-const fmtDate = (iso) => {
-  try { return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }); }
-  catch { return iso; }
-};
 
 export const ReportExporter = ({ records }) => {
   const [profile, setProfile] = useState(loadProfile);
@@ -52,23 +48,7 @@ export const ReportExporter = ({ records }) => {
 
   const exportCSV = () => {
     if (!records.length) return toast.error("No records to export");
-    const headers = ["Analyte", "Category", "Matrix", "Instrument", "Lot", "Date", "TEa%", "CV%", "Bias%", "Sigma", "QGI", "Westgard Rules", "Performance"];
-    const rows = records.map((r) => {
-      const tier = tierForSigma(r.sigma);
-      const rec = westgardRecommendation(r.sigma);
-      return [r.analyte, r.category, r.matrix, r.instrument, r.lot || "", fmtDate(r.measured_at),
-        r.tea, r.cv, r.bias, r.sigma, r.qgi, rec.rulesPlain, tier.label];
-    });
-    const csv = [headers, ...rows]
-      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sigmalab-qc-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(records);
     toast.success("CSV exported");
   };
 

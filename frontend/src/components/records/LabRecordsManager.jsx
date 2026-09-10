@@ -13,6 +13,7 @@ import { RecordRow, fmtDate } from "./RecordRow";
 import { AlertsCard } from "./AlertsCard";
 import { EditRecordDialog } from "./EditRecordDialog";
 import { CombinedTrendChart, SigmaTrendChart } from "./RecordCharts";
+import { ClearRecordsDialog, ReloadDemoButton } from "./ClearRecordsDialog";
 
 const byDateAsc = (a, b) => new Date(a.measured_at) - new Date(b.measured_at);
 const monthKey = (iso) => new Date(iso).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -78,6 +79,10 @@ export const LabRecordsManager = ({ records, onChanged }) => {
           <FlaskConical className="w-5 h-5 text-sky-600" />
           <h3 className="font-display font-semibold text-lg text-slate-900">Lab Records</h3>
           <Badge variant="secondary" className="ml-1 font-mono-num">{filtered.length}</Badge>
+          <div className="ml-auto flex items-center gap-2">
+            {records.length === 0 && <ReloadDemoButton onChanged={onChanged} />}
+            <ClearRecordsDialog filtered={filtered} total={records.length} instrument={instrument} analyte={analyte} onChanged={onChanged} />
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
