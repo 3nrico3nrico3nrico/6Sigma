@@ -31,6 +31,13 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 6)
+- Compare Export: "Print / PDF" in Compare tab (prints chart + stat cards + leaderboard); Reports tab gets an "Instrument Comparison" section (compact leaderboard per analyte on ≥2 instruments) inside the printable area.
+- Tied badge when both instruments share the same mean σ (2-decimal).
+- Instrument Leaderboard: all instruments for the chosen analyte ranked by mean σ (mean CV, |bias|, records, last σ).
+- Sigma Alerts in Lab Records: card listing analyte+instrument pairs whose latest σ < 3 — "Dropped below 3σ" (prev ≥ 3, rose) vs "Below 3σ" (persistent, amber); click filters records; latest rows highlighted (`data-alert`).
+- Shared helpers in `frontend/src/lib/compare.js`. Verified by testing agent (iteration_5: frontend 100%).
+
 ## Implemented (2026-06 — iteration 5)
 - Analyte disambiguation: every analyte has a `source` (Ricos / EFLM / Imported); names shared across sources get a suffix ("Glucose (Ricos)", "Glucose (EFLM)"); residual same-source/different-matrix clashes get " · Matrix". Applied in `disambiguate()` at `GET /api/analytes` time (covers imports).
 - Matrix badge next to analyte name in Database and Lab Records tables (+ source label in Database).

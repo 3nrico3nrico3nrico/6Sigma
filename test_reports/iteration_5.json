@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only iteration 5 testing for SigmaLab QC. All 4 new features verified end-to-end: (1) Compare Print/PDF button triggers window.print and #print-area wraps chart+stat cards+leaderboard while picker card has no-print. (2) Instrument Leaderboard shows both instruments ordered desc (row1 Ortho Vitros XT ~3.21σ, row2 Roche Cobas c502 ~2.17σ). (3) Tied badge: created two TEST_Tie records with identical CV/Bias/TEa on different instruments -> both compare-tied-a and compare-tied-b rendered, compare-best-a/b absent. (4) Reports > report-instrument-comparison section present inside #print-area with leaderboard-Potassium (2 rows) and leaderboard-TEST_Tie (when tie records present). (5) Sigma Alerts card shows count 4 with the 4 expected persistent pairs, clicking an alert filters records-instrument-filter and records-analyte-filter. (6) Latest record rows for alerted pairs carry data-alert='persistent' with AlertTriangle icon. (7) Dropped alert: created TEST_Drop 4.50σ then 1.80σ on Sysmex XN-1000 -> count became 5, TEST_Drop listed FIRST with 'Dropped below 3σ' label and '4.50σ → 1.80σ' text, row data-alert='dropped'. After cleanup count returned to 4. (8) Regression: Calculator/Database/Reports tabs load; export-csv-button present. All TEST_* records were deleted successfully.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Compare & Records charts", "issues": ["Non-critical React warnings in console: 'Select is changing from uncontrolled to controlled' (Radix Select value briefly undefined during first render) and Recharts 'width(-1) height(-1)' warnings during initial mount. Not user-visible but noisy."]},
+      {"screen": "Compare tab", "issues": ["React warning: 'Encountered two children with the same key tick-label-...' from Recharts XAxis when tie records share identical timestamps. Cosmetic only."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: initialize Radix Select `value` with '' or default to eliminate controlled-vs-uncontrolled warnings.",
+    "Optional: ensure unique X-axis ticks in Compare chart when multiple records share the same timestamp (add jitter/dedupe or use category axis) to silence Recharts duplicate-key warning."
+  ],
+  "critical_code_review_comments": [
+    "InstrumentCompare.jsx: `Select value={value || undefined}` causes controlled→uncontrolled toggle on first render. Prefer value={value ?? ''}.",
+    "compare.js sigmaAlerts sorts dropped-first correctly but uses ascending sigma inside groups which matches expected ordering.",
+    "ReportExporter.jsx reuses <Leaderboard compact /> inside #print-area — good composition. leaderboard-<analyte> testid may collide if analyte contains special chars — TEST_Tie works fine."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested)", "frontend": "100%"},
+  "seed_data_creation": "Created and DELETED TEST_Tie (2 records) and TEST_Drop (2 records) via API during the flow. Seed count restored to 41.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All iteration-5 features work as specified. Nav testids: nav-tab-{calculator,database,chart,records,compare,reports}. Compare uses compare-print-button, compare-tied-a/b, compare-best-a/b, leaderboard-card, leaderboard-row-N. Reports uses report-instrument-comparison and leaderboard-<analyteName>. Records uses sigma-alerts-card, sigma-alerts-count, sigma-alert-<recordId>, lab-record-alert-icon-<id>, and rows carry data-alert='persistent'|'dropped'. Radix Select needs ~300-400ms after opening; use force=True on options.",
+  "rca of the issue": "N/A — no issues found."
+}

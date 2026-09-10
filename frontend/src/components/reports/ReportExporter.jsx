@@ -10,6 +10,8 @@ import {
 import { Printer, FileSpreadsheet, Settings, Building2, Upload, Hexagon } from "lucide-react";
 import { toast } from "sonner";
 import { tierForSigma, TIERS, westgardRecommendation } from "@/lib/sigma";
+import { multiInstrumentAnalytes } from "@/lib/compare";
+import { Leaderboard } from "@/components/compare/InstrumentCompare";
 
 const PROFILE_KEY = "sigmalab_lab_profile";
 const defaultProfile = { name: "", address: "", director: "", accreditation: "", logo: "" };
@@ -44,6 +46,7 @@ export const ReportExporter = ({ records }) => {
   }, [latest]);
 
   const total = latest.length;
+  const comparisons = useMemo(() => multiInstrumentAnalytes(records), [records]);
   const worldPct = total ? Math.round((counts.world_class / total) * 100) : 0;
   const actionCount = counts.marginal + counts.poor;
 
@@ -182,6 +185,16 @@ export const ReportExporter = ({ records }) => {
             </table>
           </div>
         </Card>
+
+        {comparisons.length > 0 && (
+          <div className="mt-6 space-y-4" data-testid="report-instrument-comparison">
+            <div>
+              <h4 className="font-display font-semibold text-slate-900">Instrument Comparison</h4>
+              <p className="text-xs text-slate-500">Analytes measured on two or more instruments, ranked by mean sigma across all records.</p>
+            </div>
+            {comparisons.map((c) => <Leaderboard key={c.name} analyte={c.name} ranking={c.stats} compact />)}
+          </div>
+        )}
 
         {/* Signature / sign-off */}
         <div className="grid grid-cols-2 gap-8 mt-10 pt-2" data-testid="report-signature">

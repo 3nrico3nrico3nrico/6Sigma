@@ -17,9 +17,10 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend,
 } from "recharts";
-import { Pencil, Trash2, FlaskConical, History, Filter, Layers } from "lucide-react";
+import { Pencil, Trash2, FlaskConical, History, Filter, Layers, AlertTriangle, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { tierForSigma, INSTRUMENTS, TREND_PALETTE } from "@/lib/sigma";
+import { sigmaAlerts } from "@/lib/compare";
 import { updateRecord, deleteRecord } from "@/lib/api";
 
 const fmtDate = (iso) => {
@@ -74,8 +75,12 @@ export const LabRecordsManager = ({ records, onChanged }) => {
     catch { toast.error("Delete failed"); }
   };
 
+  const alerts = useMemo(() => sigmaAlerts(records), [records]);
+  const alertById = useMemo(() => new Map(alerts.map((a) => [a.id, a])), [alerts]);
+
   return (
     <div className="space-y-6">
+      {alerts.length > 0 && <AlertsCard alerts={alerts} onPick={(a) => { setInstrument(a.instrument); setAnalyte(a.analyte); }} />}
       <Card className="p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-4 h-4 text-sky-600" />
@@ -177,10 +182,13 @@ export const LabRecordsManager = ({ records, onChanged }) => {
             <tbody>
               {filtered.map((r) => {
                 const tier = tierForSigma(r.sigma);
+                const alert = alertById.get(r.id);
                 return (
-                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60" data-testid={`lab-record-item-${r.id}`}>
+                  <tr key={r.id} className={`border-b border-slate-100 hover:bg-slate-50/60 ${alert ? (alert.kind === "dropped" ? "bg-rose-50/60 border-l-4 border-l-rose-500" : "bg-amber-50/50 border-l-4 border-l-amber-400") : ""}`}
+                    data-testid={`lab-record-item-${r.id}`} data-alert={alert ? alert.kind : undefined}>
                     <td className="px-5 py-3">
                       <div className="font-medium text-slate-900 flex items-center gap-1.5 flex-wrap">
+                        {alert && <AlertTriangle className={`w-3.5 h-3.5 ${alert.kind === "dropped" ? "text-rose-600" : "text-amber-500"}`} data-testid={`lab-record-alert-icon-${r.id}`} />}
                         {r.analyte}
                         {r.matrix && <Badge variant="outline" className="font-normal text-[10px] px-1.5 py-0 text-slate-500" data-testid={`record-matrix-badge-${r.id}`}>{r.matrix}</Badge>}
                       </div>
@@ -236,6 +244,44 @@ export const LabRecordsManager = ({ records, onChanged }) => {
         <EditDialog record={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); onChanged && onChanged(); }} />
       )}
     </div>
+  );
+};
+
+const AlertsCard = ({ alerts, onPick }) => {
+  const dropped = alerts.filter((a) => a.kind === "dropped").length;
+  return (
+    <Card className="p-5 shadow-sm border-l-4 border-l-rose-500" data-testid="sigma-alerts-card">
+      <div className="flex items-center gap-2 mb-1">
+        <AlertTriangle className="w-5 h-5 text-rose-600" />
+        <h3 className="font-display font-semibold text-lg text-slate-900">Sigma Alerts</h3>
+        <Badge className="ml-1 bg-rose-600 hover:bg-rose-600 font-mono-num" data-testid="sigma-alerts-count">{alerts.length}</Badge>
+      </div>
+      <p className="text-sm text-slate-500 mb-4">
+        Methods whose latest QC is below the 3σ floor — {dropped} just dropped below the threshold, {alerts.length - dropped} persistently low. Click one to filter the records.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {alerts.map((a) => {
+          const isDrop = a.kind === "dropped";
+          return (
+            <button key={a.id} onClick={() => onPick(a)} data-testid={`sigma-alert-${a.id}`}
+              className={`text-left rounded-lg border p-3 transition-colors hover:shadow-sm ${isDrop ? "bg-rose-50 border-rose-200 hover:border-rose-400" : "bg-amber-50 border-amber-200 hover:border-amber-400"}`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium text-slate-900 text-sm">{a.analyte}</span>
+                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide ${isDrop ? "text-rose-700" : "text-amber-700"}`}>
+                  {isDrop ? <TrendingDown className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                  {isDrop ? "Dropped below 3σ" : "Below 3σ"}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{a.instrument} · {fmtDate(a.date)}</div>
+              <div className="font-mono-num text-sm mt-1.5">
+                {a.prevSigma != null && <span className="text-slate-500">{a.prevSigma.toFixed(2)}σ → </span>}
+                <span className={`font-semibold ${isDrop ? "text-rose-700" : "text-amber-800"}`}>{a.sigma.toFixed(2)}σ</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
   );
 };
 
