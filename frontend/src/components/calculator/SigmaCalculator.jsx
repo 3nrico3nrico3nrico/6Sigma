@@ -115,7 +115,7 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
                     <span className="inline-flex items-center gap-1.5">
                       {isFav(a.name) && <Star className="w-3 h-3 fill-amber-400 text-amber-400" />}
                       {a.name}
-                      <span className="text-slate-400">· {a.matrix} · TEa {a.tea != null ? a.tea : "—"}%</span>
+                      <span className="text-slate-400 ml-1">· {a.matrix} · TEa {a.tea != null ? a.tea : "—"}%</span>
                     </span>
                   </SelectItem>
                 ))}
@@ -200,10 +200,11 @@ export const SigmaCalculator = ({ analytes, prefill, onSaved, favourites }) => {
                 <Metric label="QGI = |Bias| / (1.5·CV)" value={hasInput ? qgi.toFixed(2) : "—"} testid="result-qgi-value" />
               </div>
               {hasInput && (
-                <p className={`text-xs font-medium ${qgiNote.tone === "ok" ? "text-emerald-600" : "text-amber-600"}`}>
-                  <Activity className="w-3.5 h-3.5 inline mr-1" />
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${qgiNote.tone === "ok" ? tier.badge : "bg-amber-50 text-amber-800 border-amber-200"}`}
+                  data-testid="result-performance-note">
+                  <Activity className="w-3.5 h-3.5" />
                   {qgiNote.label}
-                </p>
+                </span>
               )}
             </div>
           </div>

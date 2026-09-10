@@ -119,7 +119,11 @@ export const BiologicalVariationTable = ({ analytes, onUse, favourites, onImport
                   </button>
                 </td>
                 <td className="px-5 py-3">
-                  <div className="font-medium text-slate-900">{a.name}{a.custom && <span className="ml-1.5 text-[10px] font-semibold text-sky-600 uppercase">imported</span>}</div>
+                  <div className="font-medium text-slate-900 flex items-center gap-1.5 flex-wrap">
+                    {a.name}
+                    <Badge variant="outline" className="font-normal text-[10px] px-1.5 py-0 text-slate-500" data-testid={`bv-matrix-badge-${a.slug}`}>{a.matrix}</Badge>
+                    {a.source && <span className={`text-[10px] font-semibold uppercase ${a.custom ? "text-sky-600" : "text-slate-400"}`}>{a.source}</span>}
+                  </div>
                   <div className="text-[11px] text-slate-400">{a.category}</div>
                 </td>
                 <td className="px-3 py-3 text-slate-600">

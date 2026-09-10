@@ -204,6 +204,7 @@ def build_database():
             "tea": des["tea"],
             "peer_sigma": peer_sigma,
             "detailed": True,
+            "source": "Ricos",
         })
     # Extended analytes from the official Westgard/EFLM TEa database,
     # classified into clinical panels and enriched with CVI/CVG where known.
@@ -218,16 +219,37 @@ def build_database():
                 "slug": slug, "name": name, "category": category, "matrix": matrix,
                 "cvi": cvi, "cvg": cvg, "specs": specs,
                 "desirable_cv": des["cv"], "desirable_bias": des["bias"],
-                "tea": des["tea"], "peer_sigma": peer, "detailed": True,
+                "tea": des["tea"], "peer_sigma": peer, "detailed": True, "source": "EFLM",
             })
         else:
             db.append({
                 "slug": slug, "name": name, "category": category, "matrix": matrix,
                 "cvi": None, "cvg": None, "specs": None,
                 "desirable_cv": None, "desirable_bias": None,
-                "tea": tea, "peer_sigma": None, "detailed": False,
+                "tea": tea, "peer_sigma": None, "detailed": False, "source": "EFLM",
             })
     return db
+
+
+def disambiguate(db):
+    """Return copies with source (and matrix, if still ambiguous) appended to shared names."""
+    from collections import defaultdict, Counter
+    key = lambda a: a["name"].strip().lower()
+    groups = defaultdict(set)
+    for a in db:
+        groups[key(a)].add(a.get("source") or "Imported")
+    out = []
+    for a in db:
+        a = dict(a)
+        src = a.get("source") or "Imported"
+        if len(groups[key(a)]) > 1:
+            a["name"] = f'{a["name"]} ({src})'
+        out.append(a)
+    dup = Counter(key(a) for a in out)
+    for a in out:
+        if dup[key(a)] > 1:
+            a["name"] = f'{a["name"]} · {a["matrix"]}'
+    return out
 
 
 BIOLOGICAL_VARIATION_DB = build_database()

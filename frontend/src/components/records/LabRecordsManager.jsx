@@ -180,8 +180,11 @@ export const LabRecordsManager = ({ records, onChanged }) => {
                 return (
                   <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60" data-testid={`lab-record-item-${r.id}`}>
                     <td className="px-5 py-3">
-                      <div className="font-medium text-slate-900">{r.analyte}</div>
-                      <div className="text-[11px] text-slate-400">{r.matrix} · {r.lot || "—"}</div>
+                      <div className="font-medium text-slate-900 flex items-center gap-1.5 flex-wrap">
+                        {r.analyte}
+                        {r.matrix && <Badge variant="outline" className="font-normal text-[10px] px-1.5 py-0 text-slate-500" data-testid={`record-matrix-badge-${r.id}`}>{r.matrix}</Badge>}
+                      </div>
+                      <div className="text-[11px] text-slate-400">Lot {r.lot || "—"}</div>
                     </td>
                     <td className="px-3 py-3 text-slate-600">{r.instrument}</td>
                     <td className="px-3 py-3 text-slate-600 font-mono-num">{fmtDate(r.measured_at)}</td>

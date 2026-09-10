@@ -14,7 +14,7 @@ import uuid
 import math
 from datetime import datetime, timezone
 
-from biological_variation import BIOLOGICAL_VARIATION_DB, classify, build_specs
+from biological_variation import BIOLOGICAL_VARIATION_DB, classify, build_specs, disambiguate
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -76,7 +76,7 @@ async def root():
 @api_router.get("/analytes")
 async def get_analytes():
     custom = await db.custom_analytes.find({}, {"_id": 0}).to_list(5000)
-    return BIOLOGICAL_VARIATION_DB + custom
+    return disambiguate(BIOLOGICAL_VARIATION_DB + custom)
 
 
 def _to_float(v):
@@ -163,7 +163,7 @@ async def import_analytes(file: UploadFile = File(...)):
         base = {
             "slug": "custom-" + uuid.uuid4().hex[:10],
             "name": name, "category": category, "matrix": matrix,
-            "custom": True,
+            "custom": True, "source": "Imported",
         }
         if cvi and cvg:
             specs, peer = build_specs(cvi, cvg)

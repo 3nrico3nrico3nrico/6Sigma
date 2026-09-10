@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import "@/App.css";
 import { Toaster } from "@/components/ui/sonner";
-import { Calculator, Database, TrendingUp, FlaskConical, FileText } from "lucide-react";
+import { Calculator, Database, TrendingUp, FlaskConical, FileText, GitCompareArrows } from "lucide-react";
 import { Header } from "@/components/Header";
 import { SigmaCalculator } from "@/components/calculator/SigmaCalculator";
 import { BiologicalVariationTable } from "@/components/database/BiologicalVariationTable";
 import { MethodDecisionChart } from "@/components/charts/MethodDecisionChart";
 import { LabRecordsManager } from "@/components/records/LabRecordsManager";
+import { InstrumentCompare } from "@/components/compare/InstrumentCompare";
 import { ReportExporter } from "@/components/reports/ReportExporter";
 import { getAnalytes, getRecords } from "@/lib/api";
 import { useFavourites } from "@/lib/favourites";
@@ -16,6 +17,7 @@ const TABS = [
   { id: "database", label: "Biological Variation DB", icon: Database },
   { id: "chart", label: "Method Decision Chart", icon: TrendingUp },
   { id: "records", label: "Lab Records", icon: FlaskConical },
+  { id: "compare", label: "Compare", icon: GitCompareArrows },
   { id: "reports", label: "Reports", icon: FileText },
 ];
 
@@ -80,6 +82,13 @@ function App() {
             <PageTitle title="Lab Records & History"
               subtitle="Track measured CV% and Bias% over time per instrument and analyte." />
             <LabRecordsManager records={records} onChanged={loadRecords} />
+          </div>
+        )}
+        {activeTab === "compare" && (
+          <div data-testid="tab-panel-compare">
+            <PageTitle title="Instrument Comparison"
+              subtitle="Compare the same analyte across two instruments — sigma over time, side by side." />
+            <InstrumentCompare records={records} />
           </div>
         )}
         {activeTab === "reports" && (

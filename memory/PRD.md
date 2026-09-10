@@ -31,6 +31,13 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 5)
+- Analyte disambiguation: every analyte has a `source` (Ricos / EFLM / Imported); names shared across sources get a suffix ("Glucose (Ricos)", "Glucose (EFLM)"); residual same-source/different-matrix clashes get " · Matrix". Applied in `disambiguate()` at `GET /api/analytes` time (covers imports).
+- Matrix badge next to analyte name in Database and Lab Records tables (+ source label in Database).
+- Calculator performance note is a tier-coloured pill (World-class/Excellent/Good follow tier colours; QGI diagnoses amber).
+- New **Compare** tab: analyte + two instruments → dual-line sigma timeline + per-instrument stats (mean σ, mean CV, mean |bias|, last) with "Higher mean σ" badge.
+- Verified by testing agent (iteration_4: backend 100%, frontend 100%); 25/25 pytest.
+
 ## Implemented (2026-06 — iteration 4)
 - Clinical panel categories (20), CVI/CVG enrichment, bulk Excel/CSV import (`POST /api/analytes/import`, `DELETE /api/analytes/custom`), favourites (localStorage `sigmalab_favourites`) — verified by testing agent (iteration_3: 100%/100%).
 - Fix: calculator analyte Select used `name` as value → duplicate names (e.g. Potassium serum/urine) rendered twice in trigger. Now keyed by `slug`, label shows matrix.
