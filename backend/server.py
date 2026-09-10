@@ -91,62 +91,56 @@ def _to_float(v):
         return None
 
 
-def _parse_rows(filename: str, content: bytes):
-    """Return list of (matrix, name, tea, cvi, cvg) from an xlsx or csv file."""
-    rows = []
+def _read_rows(filename: str, content: bytes):
     if filename.lower().endswith(".csv"):
         text = content.decode("utf-8-sig", errors="ignore")
-        rows = [r for r in csv.reader(io.StringIO(text))]
-    else:
-        import openpyxl
-        wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
-        ws = wb.active
-        rows = [list(r) for r in ws.iter_rows(values_only=True)]
+        return list(csv.reader(io.StringIO(text)))
+    import openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True, read_only=True)
+    return [list(r) for r in wb.active.iter_rows(values_only=True)]
 
+
+_COLUMN_KEYS = {
+    "name": ("anal", "test", "measurand", "parameter"),
+    "tea": ("tea", "te%", "allowable", "ea%"),
+    "matrix": ("matr", "matrix", "sample", "specimen"),
+    "cvi": ("cvi", "cv-i", "within"),
+    "cvg": ("cvg", "cv-g", "between"),
+}
+
+
+def _detect_columns(rows):
+    """Return (column index map, has_header) using the header row or positional fallback."""
+    header = [str(c or "").strip().lower() for c in rows[0]]
+    cols = {}
+    for field, keys in _COLUMN_KEYS.items():
+        cols[field] = next((i for i, h in enumerate(header) if any(k in h for k in keys)), None)
+    has_header = cols["name"] is not None or cols["tea"] is not None
+    if not has_header:
+        ncol = max((len(r) for r in rows), default=0)
+        cols.update({"matrix": 0, "name": 1, "tea": 2} if ncol >= 3 else {"matrix": None, "name": 0, "tea": 1})
+    return cols, has_header
+
+
+def _row_to_entry(row, cols):
+    def cell(field):
+        i = cols.get(field)
+        return row[i] if (i is not None and i < len(row)) else None
+    name = " ".join(str(cell("name") or "").split())
+    if not name:
+        return None
+    matrix = str(cell("matrix") or "Serum").strip() or "Serum"
+    return (matrix, name, _to_float(cell("tea")), _to_float(cell("cvi")), _to_float(cell("cvg")))
+
+
+def _parse_rows(filename: str, content: bytes):
+    """Return list of (matrix, name, tea, cvi, cvg) from an xlsx or csv file."""
+    rows = _read_rows(filename, content)
     if not rows:
         return []
-
-    # Detect a header row and column positions
-    header = [str(c or "").strip().lower() for c in rows[0]]
-
-    def find(*keys):
-        for i, h in enumerate(header):
-            if any(k in h for k in keys):
-                return i
-        return None
-
-    ci_name = find("anal", "test", "measurand", "parameter")
-    ci_tea = find("tea", "te%", "allowable", "ea%")
-    ci_matrix = find("matr", "matrix", "sample", "specimen")
-    ci_cvi = find("cvi", "cv-i", "within")
-    ci_cvg = find("cvg", "cv-g", "between")
-    has_header = ci_name is not None or ci_tea is not None
-    data = rows[1:] if has_header else rows
-
-    if not has_header:
-        # Assume positional: [matrix, name, tea] (like the reference files) or [name, tea]
-        ncol = max((len(r) for r in rows), default=0)
-        if ncol >= 3:
-            ci_matrix, ci_name, ci_tea = 0, 1, 2
-        else:
-            ci_name, ci_tea = 0, 1
-
-    out = []
-    for r in data:
-        def cell(i):
-            return r[i] if (i is not None and i < len(r)) else None
-        name = str(cell(ci_name) or "").strip()
-        name = " ".join(name.split())
-        if not name:
-            continue
-        out.append((
-            str(cell(ci_matrix) or "Serum").strip() or "Serum",
-            name,
-            _to_float(cell(ci_tea)),
-            _to_float(cell(ci_cvi)),
-            _to_float(cell(ci_cvg)),
-        ))
-    return out
+    cols, has_header = _detect_columns(rows)
+    entries = (_row_to_entry(r, cols) for r in (rows[1:] if has_header else rows))
+    return [e for e in entries if e]
 
 
 @api_router.post("/analytes/import")

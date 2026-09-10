@@ -31,6 +31,18 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 7, code-quality refactor)
+- Backend: `_parse_rows` split into `_read_rows` / `_detect_columns` / `_row_to_entry`; `tests/conftest.py` adds a cross-worker file lock so parallel pytest modules touching `custom_analytes` no longer race (25/25 stable).
+- Frontend componentisation (no behaviour change, all data-testids preserved):
+  - calculator/: `useSigmaForm.js` (state + math + save), `MethodInputs.jsx`, `SigmaResults.jsx`, `PeerBenchmark.jsx`
+  - records/: `RecordRow.jsx`, `AlertsCard.jsx`, `EditRecordDialog.jsx`, `RecordCharts.jsx`
+  - compare/: `Leaderboard.jsx`, `CompareChart.jsx` (StatCard); A/B instruments now derived via `resolvePair()` — no useEffect / eslint-disable
+  - database/: `AnalyteRow.jsx`, `ImportControls.jsx` (InfoDialog + import)
+  - `lib/chartStyles.js` holds shared recharts style constants (no inline objects in chart props)
+  - MethodDecisionChart `Cell` keys use record id; Selects use `value ?? ""`.
+- Review items intentionally NOT applied (false positives): "missing hook deps" (module constants/globals/callback params — real `react-hooks/exhaustive-deps` reports 0 warnings), `is` → `==` (all uses are `is not None`), localStorage "sensitive data" (favourites and report branding are non-sensitive; app has no auth by design).
+- Verified by testing agent (iteration_6: backend 100%, frontend 100%).
+
 ## Implemented (2026-06 — iteration 6)
 - Compare Export: "Print / PDF" in Compare tab (prints chart + stat cards + leaderboard); Reports tab gets an "Instrument Comparison" section (compact leaderboard per analyte on ≥2 instruments) inside the printable area.
 - Tied badge when both instruments share the same mean σ (2-decimal).

@@ -11,7 +11,7 @@ import { Printer, FileSpreadsheet, Settings, Building2, Upload, Hexagon } from "
 import { toast } from "sonner";
 import { tierForSigma, TIERS, westgardRecommendation } from "@/lib/sigma";
 import { multiInstrumentAnalytes } from "@/lib/compare";
-import { Leaderboard } from "@/components/compare/InstrumentCompare";
+import { Leaderboard } from "@/components/compare/Leaderboard";
 
 const PROFILE_KEY = "sigmalab_lab_profile";
 const defaultProfile = { name: "", address: "", director: "", accreditation: "", logo: "" };

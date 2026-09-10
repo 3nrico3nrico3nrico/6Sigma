@@ -29,7 +29,7 @@ def test_total_count_378(s):
 def test_every_item_has_source(s):
     data = s.get(f"{API}/analytes", timeout=30).json()
     for a in data:
-        assert "source" in a and a["source"] in ("Ricos", "EFLM"), f"Bad source: {a.get('name')}={a.get('source')}"
+        assert "source" in a and a["source"] in ("Ricos", "EFLM", "Imported"), f"Bad source: {a.get('name')}={a.get('source')}"
 
 
 def test_disambiguation_glucose_and_potassium(s):

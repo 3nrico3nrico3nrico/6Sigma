@@ -37,7 +37,7 @@ export const MethodDecisionChart = ({ records, current }) => {
         return {
           x: +((r.cv / r.tea) * 100).toFixed(2),
           y: +((Math.abs(r.bias) / r.tea) * 100).toFixed(2),
-          sigma, name: r.analyte, instrument: r.instrument,
+          sigma, name: r.analyte, instrument: r.instrument, id: r.id,
           fill: tierForSigma(sigma).hex,
         };
       });
@@ -46,7 +46,7 @@ export const MethodDecisionChart = ({ records, current }) => {
       pts.push({
         x: +((current.cv / current.tea) * 100).toFixed(2),
         y: +((Math.abs(current.bias) / current.tea) * 100).toFixed(2),
-        sigma, name: current.analyte || "Current", instrument: current.instrument || "—",
+        sigma, name: current.analyte || "Current", instrument: current.instrument || "—", id: "current",
         fill: "#0f172a", isCurrent: true,
       });
     }
@@ -82,8 +82,8 @@ export const MethodDecisionChart = ({ records, current }) => {
                 dot={false} isAnimationActive={false} connectNulls name={`${c.sigma}σ`} />
             ))}
             <Scatter data={points} isAnimationActive={false} name="Operating points">
-              {points.map((p, i) => (
-                <Cell key={i} fill={p.fill} stroke={p.isCurrent ? "#0ea5e9" : "#fff"} strokeWidth={p.isCurrent ? 3 : 1.5} r={p.isCurrent ? 9 : 6} />
+              {points.map((p) => (
+                <Cell key={p.id} fill={p.fill} stroke={p.isCurrent ? "#0ea5e9" : "#fff"} strokeWidth={p.isCurrent ? 3 : 1.5} r={p.isCurrent ? 9 : 6} />
               ))}
             </Scatter>
           </ComposedChart>
