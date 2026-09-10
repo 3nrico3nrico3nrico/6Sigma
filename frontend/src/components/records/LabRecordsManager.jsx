@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { FlaskConical, Filter } from "lucide-react";
+import { FlaskConical, Filter, History } from "lucide-react";
 import { toast } from "sonner";
 import { sigmaAlerts } from "@/lib/compare";
 import { deleteRecord } from "@/lib/api";
-import { RecordRow, fmtDate } from "./RecordRow";
+import { RecordRow } from "./RecordRow";
 import { AlertsCard } from "./AlertsCard";
 import { EditRecordDialog } from "./EditRecordDialog";
 import { CombinedTrendChart, SigmaTrendChart } from "./RecordCharts";
@@ -42,8 +42,13 @@ export const LabRecordsManager = ({ records, onChanged }) => {
     .filter((r) => (instrument === "all" || r.instrument === instrument) && (analyte === "all" || r.analyte === analyte))
     .sort((a, b) => byDateAsc(b, a)), [records, instrument, analyte]);
 
-  const trend = useMemo(() => filtered.slice().sort(byDateAsc)
-    .map((r) => ({ date: fmtDate(r.measured_at), sigma: r.sigma, analyte: r.analyte })), [filtered]);
+  const trendSeries = useMemo(() => {
+    if (analyte === "all") return [];
+    const byInst = {};
+    filtered.forEach((r) => { (byInst[r.instrument] ||= []).push(r); });
+    return Object.entries(byInst).map(([inst, rows]) => ({ inst, rows: rows.slice().sort(byDateAsc) }));
+  }, [filtered, analyte]);
+  const trendPoints = trendSeries.reduce((n, s) => n + s.rows.length, 0);
 
   const combined = useMemo(() => combinedTrend(records), [records]);
   const alerts = useMemo(() => sigmaAlerts(records), [records]);
@@ -72,7 +77,12 @@ export const LabRecordsManager = ({ records, onChanged }) => {
       </Card>
 
       {combined.rows.length > 1 && combined.names.length > 0 && <CombinedTrendChart rows={combined.rows} names={combined.names} />}
-      {trend.length > 1 && <SigmaTrendChart data={trend} />}
+      {trendPoints > 1 && <SigmaTrendChart analyte={analyte} series={trendSeries} />}
+      {analyte === "all" && records.length > 1 && (
+        <p className="text-xs text-slate-500 flex items-center gap-1.5" data-testid="sigma-trend-hint">
+          <History className="w-3.5 h-3.5" /> Pick an analyte above to see its sigma trend over time (one line per instrument).
+        </p>
+      )}
 
       <Card className="p-0 overflow-hidden shadow-sm">
         <div className="p-5 border-b border-slate-200 flex items-center gap-2">

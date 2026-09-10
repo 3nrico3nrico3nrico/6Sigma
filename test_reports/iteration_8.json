@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend-only regression test for Sigma Trend Over Time tooltip accuracy bug fix. All scenarios pass: (1) analyte=all shows hint + combined chart, no sigma-trend-card; (2) instrument-only filter still shows hint; (3) Potassium selected: card title correct, single-instrument case → no legend, 4 dots each with tooltips matching /api/records data (sigma 2.31/2.21/2.12/2.04, correct dates, CV/Bias/Lot); (4) TEST_Trend seeded 3 same-day records on 'Other' (sigma 4.50/20.00/2.25) → chart shows 3 distinct dots, Y axis extends to 20, tooltips match each record's time + sigma; adding Sysmex XN-1000 record (sigma 5.00) → legend appears with both instruments, tooltip on Sysmex dot correctly shows 'Sysmex XN-1000 5.00σ'; (5) TEST_Trend records cleaned via DELETE /api/records?analyte=TEST_Trend; (6) Compare tab still loads.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RecordCharts.jsx SigmaTrendChart correctly uses numeric time axis (type='number', scale='time') and per-instrument dataKeys — root cause fixed properly.",
+    "TrendTooltip iterates payload and reads row.meta[dataKey] which guarantees each shown value is tied to the correct instrument at that exact timestamp — no more label-collision.",
+    "LabRecordsManager only renders SigmaTrendChart when analyte !== 'all' and trendPoints > 1; hint shown otherwise — good UX."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "seed_data_creation": "Created 4 TEST_Trend records via POST /api/records then cleaned up via DELETE /api/records?analyte=TEST_Trend.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Sigma Trend tooltip bug fully verified. Playwright note: hover requires scroll_into_view_if_needed() on trend card + mouse.move steps=4-5 for recharts to register activeDot. TEST_Trend cleaned; DB back to seeded ~59 records."
+}
