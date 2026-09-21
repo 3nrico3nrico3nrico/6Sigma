@@ -31,6 +31,10 @@
 6. Normalized Method Decision Chart.
 7. Export reports (CSV + printable PDF).
 
+## Implemented (2026-06 — iteration 9, bug fix)
+- Fixed wrong tooltip values in Lab Records "Sigma Trend Over Time": chart used a formatted date string as a categorical X axis (duplicate labels) and mixed all analytes in one line. Now: shown only when an analyte is selected, one line per instrument, numeric time axis, custom tooltip (date+time, instrument, σ, CV, bias, lot), Y axis auto-extends above 8. Hint shown when no analyte is selected.
+- Verified by testing agent (iteration_8: frontend 100%, every dot cross-checked against /api/records). Final check: pytest 34/34, all 6 tabs render, DB = 40 demo records / 378 analytes.
+
 ## Implemented (2026-06 — iteration 8)
 - Bulk record clearing: `DELETE /api/records[?instrument=&analyte=]` (all or filtered). Lab Records header gets **Clear all / Clear filtered** button → confirmation dialog with record count, scope, and **Export CSV first** backup.
 - Demo data no longer re-seeds after the user empties the DB (`settings.demo_dismissed` flag, set on bulk delete or when the last record is deleted). **Load demo data** button appears only when the list is empty (`POST /api/seed`).
